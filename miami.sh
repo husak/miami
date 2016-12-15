@@ -14,7 +14,7 @@ inotifywait -m -q -e create --format '%w%f' $DIR | while read FILE
     if file -i $FILE | grep -q "text"; then
       echo "$DATE new malware stored in text file $FILE" >> $LOG
       # grep IP addresses in plaintext
-      grep -E -o "[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}" $FILE | while read IP
+      grep -E -o "[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}" $FILE | sort | uniq | while read IP
         do
           echo "$DATE IP $IP found in file $FILE" >> $LOG
           IPLIST[$COUNT]=$IP
@@ -23,7 +23,7 @@ inotifywait -m -q -e create --format '%w%f' $DIR | while read FILE
     else
       echo "$DATE new malware stored in binary file $FILE" >> $LOG
       # grep IP addresses in strings extracted from binary file
-      strings $FILE | grep -E -o "[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}" | while read IP
+      strings $FILE | grep -E -o "[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}" | sort | uniq | while read IP
         do
           echo "$DATE IP $IP found in file $FILE" >> $LOG
           IPLIST[$COUNT]=$IP
@@ -31,7 +31,7 @@ inotifywait -m -q -e create --format '%w%f' $DIR | while read FILE
         done
     fi
     # prepare IDEA event
-    if $COUNT > 0
+    if $COUNT > 0; then
       IDEA='{
 "Format": "IDEA0",
 "DetectTime": "'$DATE'",
@@ -39,9 +39,9 @@ inotifywait -m -q -e create --format '%w%f' $DIR | while read FILE
 "Source": [{
     "IP4": ['
       for i in `seq 0 $COUNT`;
-      do
-        IDEA+=$IPLIST[$i]
-      done
+        do
+          IDEA+=$IPLIST[$i]
+        done
       IDEA+=']
   }],
 "Node": [{
